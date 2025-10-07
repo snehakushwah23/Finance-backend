@@ -119,9 +119,10 @@ app.delete('/api/branches/:id', async (req, res) => {
 });
 
 // MongoDB connection (use env on Render/production)
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/expenses';
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb+srv://sk0069954:sk069954@hrms-cluster.xq6bhcp.mongodb.net/expenses?retryWrites=true&w=majority';
 console.log('MONGODB_URI:', MONGODB_URI ? 'Set' : 'Not set');
 console.log('Environment check:', process.env.NODE_ENV);
+console.log('Using URI:', MONGODB_URI.substring(0, 20) + '...');
 
 mongoose.connect(MONGODB_URI, {
   serverSelectionTimeoutMS: 8000,
