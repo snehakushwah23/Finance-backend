@@ -3,7 +3,14 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 
 const app = express();
-app.use(cors());
+app.use(cors({
+  origin: [
+    'https://finance-frontend-pi-ten.vercel.app',
+    'http://localhost:3000',
+    'http://localhost:5173'
+  ],
+  credentials: true
+}));
 app.use(express.json());
 
 // Branch schema and model
@@ -148,6 +155,33 @@ mongoose.connect('mongodb://localhost:27017/expenses')
   .catch((err) => {
     console.error('MongoDB connection error:', err);
   });
+
+// GET /api/all - return combined data in one response
+app.get('/api/all', async (req, res) => {
+  try {
+    const { month, branch } = req.query;
+
+    const expenseFilter = month ? { month } : {};
+    const customerExpenseFilter = month ? { month } : {};
+    const branchEntryFilter = branch ? { branch } : {};
+
+    const [branches, branchEntries, expenses, customerExpenses] = await Promise.all([
+      Branch.find().sort({ name: 1 }),
+      BranchEntry.find(branchEntryFilter).sort({ date: -1 }),
+      Expense.find(expenseFilter).sort({ date: -1 }),
+      CustomerExpense.find(customerExpenseFilter).sort({ date: -1 })
+    ]);
+
+    res.json({
+      branches,
+      branchEntries,
+      expenses,
+      customerExpenses
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Health check endpoint
 app.get('/', (req, res) => {
