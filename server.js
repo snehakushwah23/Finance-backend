@@ -123,11 +123,14 @@ app.delete('/api/branches/:id', async (req, res) => {
 
 // MongoDB connection (use env on Render/production)
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/expenses';
+console.log('MONGODB_URI:', MONGODB_URI ? 'Set' : 'Not set');
+console.log('Environment check:', process.env.NODE_ENV);
+
 mongoose.connect(MONGODB_URI, {
   serverSelectionTimeoutMS: 8000,
   socketTimeoutMS: 20000
 }).then(() => {
-  console.log('MongoDB connected');
+  console.log('MongoDB connected successfully');
 }).catch((err) => {
   console.error('MongoDB connection error:', err.message);
 });
