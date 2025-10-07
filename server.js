@@ -148,7 +148,8 @@ const customerExpenseSchema = new mongoose.Schema({
 const CustomerExpense = mongoose.model('CustomerExpense', customerExpenseSchema);
 
 // MongoDB connection
-mongoose.connect('mongodb://localhost:27017/expenses')
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/expenses';
+mongoose.connect(MONGODB_URI)
   .then(() => {
     console.log('Connected to MongoDB successfully');
   })
