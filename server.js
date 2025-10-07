@@ -1,6 +1,9 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const app = express();
 app.use(cors());
@@ -118,8 +121,16 @@ app.delete('/api/branches/:id', async (req, res) => {
   }
 });
 
-// MongoDB connection
-mongoose.connect('mongodb://localhost:27017/expenses');
+// MongoDB connection (use env on Render/production)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/expenses';
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 8000,
+  socketTimeoutMS: 20000
+}).then(() => {
+  console.log('MongoDB connected');
+}).catch((err) => {
+  console.error('MongoDB connection error:', err.message);
+});
 // Health check endpoint
 app.get('/', (req, res) => {
   res.send('Expense backend is running');
