@@ -3,14 +3,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 
 const app = express();
-app.use(cors({
-  origin: [
-    'https://finance-frontend-pi-ten.vercel.app',
-    'http://localhost:3000',
-    'http://localhost:5173'
-  ],
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
 // Branch schema and model
@@ -125,102 +118,27 @@ app.delete('/api/branches/:id', async (req, res) => {
   }
 });
 
-// Expense schema and model (defined before MongoDB connection)
+// MongoDB connection
+mongoose.connect('mongodb://localhost:27017/expenses');
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.send('Expense backend is running');
+});
+
+// Frontend connectivity test endpoint
+app.get('/api/test', (req, res) => {
+  res.json({ status: 'Database connected' });
+});
+
 const expenseSchema = new mongoose.Schema({
   category: { type: String, required: true },
   month: { type: String, required: true },
   amount: { type: Number, required: true },
   description: { type: String },
   date: { type: Date, default: Date.now },
-}, { collection: 'expenses' }); // Explicitly specify collection name
+});
 
 const Expense = mongoose.model('Expense', expenseSchema);
-
-// Customer Expense schema and model
-const customerExpenseSchema = new mongoose.Schema({
-  customerName: { type: String, required: true },
-  date: { type: Date, required: true },
-  amount: { type: Number, required: true },
-  category: { type: String, required: true },
-  description: { type: String },
-}, { collection: 'customerExpenses' });
-
-const CustomerExpense = mongoose.model('CustomerExpense', customerExpenseSchema);
-
-// MongoDB connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/expenses';
-mongoose.connect(MONGODB_URI)
-  .then(() => {
-    console.log('Connected to MongoDB successfully');
-  })
-  .catch((err) => {
-    console.error('MongoDB connection error:', err);
-  });
-
-// GET /api/all - return combined data in one response
-app.get('/api/all', async (req, res) => {
-  try {
-    const { month, branch } = req.query;
-
-    const expenseFilter = month ? { month } : {};
-    const customerExpenseFilter = month ? { month } : {};
-    const branchEntryFilter = branch ? { branch } : {};
-
-    const [branches, branchEntries, expenses, customerExpenses] = await Promise.all([
-      Branch.find().sort({ name: 1 }),
-      BranchEntry.find(branchEntryFilter).sort({ date: -1 }),
-      Expense.find(expenseFilter).sort({ date: -1 }),
-      CustomerExpense.find(customerExpenseFilter).sort({ date: -1 })
-    ]);
-
-    res.json({
-      branches,
-      branchEntries,
-      expenses,
-      customerExpenses
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Health check endpoint
-app.get('/', (req, res) => {
-  res.send('Expense backend is running');
-});
-
-// Debug endpoint to check database directly
-app.get('/api/debug/expenses', async (req, res) => {
-  try {
-    const directQuery = await mongoose.connection.db.collection('expenses').find({}).toArray();
-    const modelQuery = await Expense.find({});
-    res.json({
-      directQueryCount: directQuery.length,
-      modelQueryCount: modelQuery.length,
-      directSample: directQuery[0] || null,
-      modelSample: modelQuery[0] || null
-    });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// Test endpoint to check database connection
-app.get('/api/test', async (req, res) => {
-  try {
-    const count = await Expense.countDocuments();
-    res.json({ 
-      status: 'Database connected', 
-      totalExpenses: count,
-      message: 'Backend and database are working properly'
-    });
-  } catch (err) {
-    res.status(500).json({ 
-      status: 'Database error', 
-      error: err.message 
-    });
-  }
-});
 
 // GET /api/expenses/:category/:month
 app.get('/api/expenses/:category/:month', async (req, res) => {
@@ -236,13 +154,10 @@ app.get('/api/expenses/:category/:month', async (req, res) => {
 // POST /api/expenses
 app.post('/api/expenses', async (req, res) => {
   try {
-    console.log('Received expense data:', req.body);
     const expense = new Expense(req.body);
-    const savedExpense = await expense.save();
-    console.log('Expense saved successfully:', savedExpense);
-    res.status(201).json(savedExpense);
+    await expense.save();
+    res.status(201).json(expense);
   } catch (err) {
-    console.error('Error saving expense:', err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -267,38 +182,6 @@ app.get('/api/expenses/total/:category/:month', async (req, res) => {
   }
 });
 
-// GET /api/expenses/all - get all expenses (MUST BE BEFORE ANY PARAMETERIZED ROUTES)
-app.get('/api/expenses/all', async (req, res) => {
-  try {
-    console.log('=== API CALL: /api/expenses/all ===');
-    console.log('Request timestamp:', new Date().toISOString());
-    
-    // Use Mongoose model for consistent querying
-    const expenses = await Expense.find({}).sort({ date: -1 });
-    console.log('✅ Found expenses in database:', expenses.length);
-    
-    if (expenses.length > 0) {
-      const categories = [...new Set(expenses.map(d => d.category))];
-      console.log('📂 Categories:', categories.join(', '));
-      console.log('📄 Sample expense:', {
-        category: expenses[0].category,
-        month: expenses[0].month,
-        amount: expenses[0].amount,
-        date: expenses[0].date
-      });
-    } else {
-      console.log('⚠️ No expenses found in database!');
-    }
-    
-    console.log('=== END API CALL - Returning', expenses.length, 'expenses ===');
-    res.json(expenses);
-  } catch (err) {
-    console.error('❌ Error loading all expenses:', err);
-    console.error('Error details:', err.message);
-    res.status(500).json({ error: err.message });
-  }
-});
-
 // GET /api/expenses/:month (all categories, for total page)
 app.get('/api/expenses/:month', async (req, res) => {
   const { month } = req.params;
@@ -314,44 +197,28 @@ app.get('/api/expenses/:month', async (req, res) => {
 app.get('/api/expenses/all/:month', async (req, res) => {
   const { month } = req.params;
   try {
-    console.log('Loading expenses for month:', month);
     const expenses = await Expense.find({ month }).sort({ date: 1 });
-    console.log('Found expenses for', month, ':', expenses.length);
     res.json(expenses);
   } catch (err) {
-    console.error('Error loading expenses for month:', err);
     res.status(500).json({ error: err.message });
   }
 });
 
-// DELETE /api/expenses/:id - delete an expense
-app.delete('/api/expenses/:id', async (req, res) => {
-  try {
-    const expense = await Expense.findByIdAndDelete(req.params.id);
-    if (!expense) return res.status(404).json({ error: 'Expense not found' });
-    res.json({ success: true });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// ---------------------------------------------
+// Customer/Employee Expenses (separate collection)
+// ---------------------------------------------
+
+const customerExpenseSchema = new mongoose.Schema({
+  customerName: { type: String, required: true },
+  date: { type: Date, required: true },
+  amount: { type: Number, required: true },
+  category: { type: String, required: true },
+  description: { type: String }
 });
 
-// PUT /api/expenses/:id - update an expense
-app.put('/api/expenses/:id', async (req, res) => {
-  try {
-    const expense = await Expense.findByIdAndUpdate(
-      req.params.id,
-      { $set: req.body },
-      { new: true }
-    );
-    if (!expense) return res.status(404).json({ error: 'Expense not found' });
-    res.json(expense);
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
-});
+const CustomerExpense = mongoose.model('CustomerExpense', customerExpenseSchema);
 
-// Customer Expense API routes
-// GET /api/customer-expenses - get all customer expenses
+// GET all customer/employee expenses
 app.get('/api/customer-expenses', async (req, res) => {
   try {
     const expenses = await CustomerExpense.find().sort({ date: -1 });
@@ -361,21 +228,18 @@ app.get('/api/customer-expenses', async (req, res) => {
   }
 });
 
-// POST /api/customer-expenses - add a new customer expense
+// POST add a new expense
 app.post('/api/customer-expenses', async (req, res) => {
   try {
-    console.log('Received customer expense data:', req.body);
     const expense = new CustomerExpense(req.body);
-    const savedExpense = await expense.save();
-    console.log('Customer expense saved successfully:', savedExpense);
-    res.status(201).json(savedExpense);
+    await expense.save();
+    res.status(201).json(expense);
   } catch (err) {
-    console.error('Error saving customer expense:', err);
     res.status(400).json({ error: err.message });
   }
 });
 
-// PUT /api/customer-expenses/:id - update a customer expense
+// PUT update an expense
 app.put('/api/customer-expenses/:id', async (req, res) => {
   try {
     const expense = await CustomerExpense.findByIdAndUpdate(
@@ -383,18 +247,18 @@ app.put('/api/customer-expenses/:id', async (req, res) => {
       { $set: req.body },
       { new: true }
     );
-    if (!expense) return res.status(404).json({ error: 'Customer expense not found' });
+    if (!expense) return res.status(404).json({ error: 'Expense not found' });
     res.json(expense);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }
 });
 
-// DELETE /api/customer-expenses/:id - delete a customer expense
+// DELETE an expense
 app.delete('/api/customer-expenses/:id', async (req, res) => {
   try {
     const expense = await CustomerExpense.findByIdAndDelete(req.params.id);
-    if (!expense) return res.status(404).json({ error: 'Customer expense not found' });
+    if (!expense) return res.status(404).json({ error: 'Expense not found' });
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: err.message });
