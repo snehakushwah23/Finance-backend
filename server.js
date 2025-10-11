@@ -24,6 +24,17 @@ const branchEntrySchema = new mongoose.Schema({
   emi: { type: Number, required: true }
 });
 const BranchEntry = mongoose.model('BranchEntry', branchEntrySchema);
+
+// GET /api/branch-entries - get all entries from all branches
+app.get('/api/branch-entries', async (req, res) => {
+  try {
+    const entries = await BranchEntry.find().sort({ date: -1 });
+    res.json(entries);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // GET /api/branch-entries/:branch - get all entries for a branch
 app.get('/api/branch-entries/:branch', async (req, res) => {
   try {
@@ -124,14 +135,6 @@ console.log('MONGODB_URI:', MONGODB_URI ? 'Set' : 'Not set');
 console.log('Environment check:', process.env.NODE_ENV);
 console.log('Using URI:', MONGODB_URI.substring(0, 20) + '...');
 
-mongoose.connect(MONGODB_URI, {
-  serverSelectionTimeoutMS: 8000,
-  socketTimeoutMS: 20000
-}).then(() => {
-  console.log('MongoDB connected successfully');
-}).catch((err) => {
-  console.error('MongoDB connection error:', err.message);
-});
 // Health check endpoint
 app.get('/', (req, res) => {
   res.send('Expense backend is running');
@@ -281,8 +284,19 @@ app.delete('/api/customer-expenses/:id', async (req, res) => {
 // (Moved to very end, after all other routes)
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => {
-  console.log(`Backend server running on port ${PORT}`);
+
+// Connect to MongoDB first, then start the server
+mongoose.connect(MONGODB_URI, {
+  serverSelectionTimeoutMS: 30000,
+  socketTimeoutMS: 45000
+}).then(() => {
+  console.log('MongoDB connected successfully');
+  app.listen(PORT, () => {
+    console.log(`Backend server running on port ${PORT}`);
+  });
+}).catch((err) => {
+  console.error('MongoDB connection error:', err.message);
+  process.exit(1);
 });
 
 
