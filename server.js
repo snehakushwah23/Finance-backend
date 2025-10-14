@@ -280,6 +280,69 @@ app.delete('/api/customer-expenses/:id', async (req, res) => {
   }
 });
 
+// ---------------------------------------------
+// Employee Master (separate collection)
+// ---------------------------------------------
+
+const employeeSchema = new mongoose.Schema({
+  name: { type: String, required: true },
+  mobile: { type: String },
+  designation: { type: String },
+  department: { type: String },
+  joiningDate: { type: Date },
+  salary: { type: Number },
+  createdAt: { type: Date, default: Date.now }
+});
+
+const Employee = mongoose.model('Employee', employeeSchema);
+
+// GET all employees
+app.get('/api/employees', async (req, res) => {
+  try {
+    const employees = await Employee.find().sort({ name: 1 });
+    res.json(employees);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST add a new employee
+app.post('/api/employees', async (req, res) => {
+  try {
+    const employee = new Employee(req.body);
+    await employee.save();
+    res.status(201).json(employee);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// PUT update an employee
+app.put('/api/employees/:id', async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json(employee);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+// DELETE an employee
+app.delete('/api/employees/:id', async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndDelete(req.params.id);
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Catch-all for undefined API routes (should be last)
 // (Moved to very end, after all other routes)
 
