@@ -45,6 +45,7 @@ const swaggerSpec = swaggerJsdoc({
           type: 'object',
           properties: {
             _id: { type: 'string' },
+            branch: { type: 'string' },
             category: { type: 'string' },
             month: { type: 'string' },
             amount: { type: 'number' },
@@ -63,10 +64,23 @@ const swaggerSpec = swaggerJsdoc({
             description: { type: 'string' }
           }
         },
+        EmployeeExpense: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            branch: { type: 'string' },
+            employeeName: { type: 'string' },
+            date: { type: 'string', format: 'date-time' },
+            amount: { type: 'number' },
+            category: { type: 'string' },
+            description: { type: 'string' }
+          }
+        },
         Employee: {
           type: 'object',
           properties: {
             _id: { type: 'string' },
+            branch: { type: 'string' },
             name: { type: 'string' },
             mobile: { type: 'string' },
             designation: { type: 'string' },
@@ -104,6 +118,16 @@ const swaggerSpec = swaggerJsdoc({
       '/api/expenses': {
         post: { summary: 'Create expense', responses: { 201: { description: 'Created' } } }
       },
+      '/api/branch-expenses/{branch}': {
+        get: { summary: 'Get indirect expenses for a branch', parameters: [{ name: 'branch', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/branch-expenses': {
+        post: { summary: 'Create branch expense', responses: { 201: { description: 'Created' } } }
+      },
+      '/api/branch-expenses/{id}': {
+        put: { summary: 'Update branch expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+        delete: { summary: 'Delete branch expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
       '/api/expenses/total/{category}/{month}': {
         get: { summary: 'Get expense totals by day', parameters: [{ name: 'category', in: 'path', required: true, schema: { type: 'string' } }, { name: 'month', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
       },
@@ -121,6 +145,16 @@ const swaggerSpec = swaggerJsdoc({
         put: { summary: 'Update customer expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
         delete: { summary: 'Delete customer expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
       },
+      '/api/employee-expenses/{branch}': {
+        get: { summary: 'Get employee expenses for a branch', parameters: [{ name: 'branch', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/EmployeeExpense' } } } } } } }
+      },
+      '/api/employee-expenses': {
+        post: { summary: 'Create employee expense', responses: { 201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/EmployeeExpense' } } } } } }
+      },
+      '/api/employee-expenses/{id}': {
+        put: { summary: 'Update employee expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+        delete: { summary: 'Delete employee expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
       '/api/employees': {
         get: { summary: 'Get all employees', responses: { 200: { description: 'OK' } } },
         post: { summary: 'Create employee', responses: { 201: { description: 'Created' } } }
@@ -128,6 +162,16 @@ const swaggerSpec = swaggerJsdoc({
       '/api/employees/{id}': {
         put: { summary: 'Update employee', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
         delete: { summary: 'Delete employee', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/branch-employees/{branch}': {
+        get: { summary: 'Get employees of a branch', parameters: [{ name: 'branch', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/branch-employees': {
+        post: { summary: 'Create branch employee', responses: { 201: { description: 'Created' } } }
+      },
+      '/api/branch-employees/{id}': {
+        put: { summary: 'Update branch employee', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+        delete: { summary: 'Delete branch employee', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
       }
     }
   },
@@ -335,6 +379,8 @@ const buildApiIndexHtml = (base) => `
             <li><a href="${base}/api/expenses/Office/2025-10" target="_blank">GET /api/expenses/Office/2025-10</a></li>
             <li><a href="${base}/api/expenses/total/Office/2025-10" target="_blank">GET /api/expenses/total/Office/2025-10</a></li>
             <li><a href="${base}/api/expenses/2025-10" target="_blank">GET /api/expenses/2025-10</a></li>
+            <li><a href="${base}/api/branch-expenses/mumbai" target="_blank">GET /api/branch-expenses/mumbai</a></li>
+            <li><a href="${base}/api/branch-expenses/delhi" target="_blank">GET /api/branch-expenses/delhi</a></li>
           </ul>
         </div>
       </div>
@@ -353,6 +399,10 @@ const buildApiIndexHtml = (base) => `
         <div class="card">
           <ul>
             <li><a href="${base}/api/employees" target="_blank">GET /api/employees</a></li>
+            <li><a href="${base}/api/branch-employees/mumbai" target="_blank">GET /api/branch-employees/mumbai</a></li>
+            <li><a href="${base}/api/branch-employees/delhi" target="_blank">GET /api/branch-employees/delhi</a></li>
+            <li><a href="${base}/api/employee-expenses/mumbai" target="_blank">GET /api/employee-expenses/mumbai</a></li>
+            <li><a href="${base}/api/employee-expenses/delhi" target="_blank">GET /api/employee-expenses/delhi</a></li>
           </ul>
         </div>
       </div>
@@ -408,6 +458,7 @@ app.post('/api/seed', async (req, res) => {
 });
 
 const expenseSchema = new mongoose.Schema({
+  branch: { type: String }, // optional; used for per-branch indirect expenses
   category: { type: String, required: true },
   month: { type: String, required: true },
   amount: { type: Number, required: true },
@@ -436,6 +487,50 @@ app.post('/api/expenses', async (req, res) => {
     res.status(201).json(expense);
   } catch (err) {
     res.status(400).json({ error: err.message });
+  }
+});
+
+// Branch Indirect Expenses (per branch)
+app.get('/api/branch-expenses/:branch', async (req, res) => {
+  try {
+    const expenses = await Expense.find({ branch: req.params.branch }).sort({ date: -1 });
+    res.json(expenses);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/branch-expenses', async (req, res) => {
+  try {
+    const expense = new Expense(req.body);
+    await expense.save();
+    res.status(201).json(expense);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/branch-expenses/:id', async (req, res) => {
+  try {
+    const expense = await Expense.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    if (!expense) return res.status(404).json({ error: 'Expense not found' });
+    res.json(expense);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/branch-expenses/:id', async (req, res) => {
+  try {
+    const expense = await Expense.findByIdAndDelete(req.params.id);
+    if (!expense) return res.status(404).json({ error: 'Expense not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
   }
 });
 
@@ -496,6 +591,18 @@ const customerExpenseSchema = new mongoose.Schema({
 
 const CustomerExpense = mongoose.model('CustomerExpense', customerExpenseSchema);
 
+// Employee Expenses (per branch)
+const employeeExpenseSchema = new mongoose.Schema({
+  branch: { type: String, required: true },
+  employeeName: { type: String, required: true },
+  date: { type: Date, required: true },
+  amount: { type: Number, required: true },
+  category: { type: String, required: true },
+  description: { type: String }
+});
+
+const EmployeeExpense = mongoose.model('EmployeeExpense', employeeExpenseSchema);
+
 // GET all customer/employee expenses
 app.get('/api/customer-expenses', async (req, res) => {
   try {
@@ -543,11 +650,56 @@ app.delete('/api/customer-expenses/:id', async (req, res) => {
   }
 });
 
+// Employee Expenses routes
+app.get('/api/employee-expenses/:branch', async (req, res) => {
+  try {
+    const expenses = await EmployeeExpense.find({ branch: req.params.branch }).sort({ date: -1 });
+    res.json(expenses);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/employee-expenses', async (req, res) => {
+  try {
+    const exp = new EmployeeExpense(req.body);
+    await exp.save();
+    res.status(201).json(exp);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/employee-expenses/:id', async (req, res) => {
+  try {
+    const exp = await EmployeeExpense.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    if (!exp) return res.status(404).json({ error: 'Expense not found' });
+    res.json(exp);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/employee-expenses/:id', async (req, res) => {
+  try {
+    const exp = await EmployeeExpense.findByIdAndDelete(req.params.id);
+    if (!exp) return res.status(404).json({ error: 'Expense not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ---------------------------------------------
 // Employee Master (separate collection)
 // ---------------------------------------------
 
 const employeeSchema = new mongoose.Schema({
+  branch: { type: String }, // optional; used for per-branch employee master
   name: { type: String, required: true },
   mobile: { type: String },
   designation: { type: String },
@@ -597,6 +749,50 @@ app.put('/api/employees/:id', async (req, res) => {
 
 // DELETE an employee
 app.delete('/api/employees/:id', async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndDelete(req.params.id);
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json({ success: true });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Branch Employees (per branch)
+app.get('/api/branch-employees/:branch', async (req, res) => {
+  try {
+    const employees = await Employee.find({ branch: req.params.branch }).sort({ name: 1 });
+    res.json(employees);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/api/branch-employees', async (req, res) => {
+  try {
+    const employee = new Employee(req.body);
+    await employee.save();
+    res.status(201).json(employee);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.put('/api/branch-employees/:id', async (req, res) => {
+  try {
+    const employee = await Employee.findByIdAndUpdate(
+      req.params.id,
+      { $set: req.body },
+      { new: true }
+    );
+    if (!employee) return res.status(404).json({ error: 'Employee not found' });
+    res.json(employee);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+app.delete('/api/branch-employees/:id', async (req, res) => {
   try {
     const employee = await Employee.findByIdAndDelete(req.params.id);
     if (!employee) return res.status(404).json({ error: 'Employee not found' });
