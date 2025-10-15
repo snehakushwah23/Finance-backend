@@ -3,6 +3,7 @@ import cors from 'cors';
 import mongoose from 'mongoose';
 import swaggerUi from 'swagger-ui-express';
 import swaggerJsdoc from 'swagger-jsdoc';
+import open from 'open';
 
 const app = express();
 app.use(cors());
@@ -274,6 +275,109 @@ app.get('/api/test', (req, res) => {
   res.json({ status: 'Database connected' });
 });
 
+// API Index - single screen with all API links
+const buildApiIndexHtml = (base) => `
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Finance API Index</title>
+    <style>
+      body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background:#f8fafc; color:#0f172a; margin:0; }
+      .container { max-width: 960px; margin: 0 auto; padding: 24px; }
+      h1 { margin: 0 0 16px; }
+      .card { background:#fff; border:1px solid #e5e7eb; border-radius:12px; padding:16px 18px; margin:12px 0; }
+      .section-title { font-size: 14px; font-weight: 700; color:#334155; text-transform: uppercase; letter-spacing:.04em; margin: 24px 0 8px; }
+      ul { margin:0; padding:0 0 0 18px; }
+      li { margin:6px 0; }
+      a { color:#2563eb; text-decoration: none; }
+      a:hover { text-decoration: underline; }
+      code { background:#f1f5f9; padding:2px 6px; border-radius:6px; }
+      .topbar { display:flex; align-items:center; justify-content:space-between; margin-bottom: 16px; }
+      .btn { display:inline-block; background:#111827; color:#fff; padding:8px 12px; border-radius:8px; text-decoration:none; font-weight:600; }
+      .btn:hover { background:#0b1220; }
+      .muted { color:#64748b; font-size: 13px; }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="topbar">
+        <h1>Finance API Index</h1>
+        <a class="btn" href="${base}/api/docs" target="_blank" rel="noreferrer">Open API Docs</a>
+      </div>
+      <p class="muted">Click a GET endpoint below to view live JSON in your browser.</p>
+
+      <div class="section">
+        <div class="section-title">Branches</div>
+        <div class="card">
+          <ul>
+            <li><a href="${base}/api/branches" target="_blank">GET /api/branches</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Branch Entries</div>
+        <div class="card">
+          <ul>
+            <li><a href="${base}/api/branch-entries" target="_blank">GET /api/branch-entries</a></li>
+            <li><a href="${base}/api/branch-entries/mumbai" target="_blank">GET /api/branch-entries/mumbai</a></li>
+            <li><a href="${base}/api/branch-entries/delhi" target="_blank">GET /api/branch-entries/delhi</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Expenses</div>
+        <div class="card">
+          <ul>
+            <li><a href="${base}/api/expenses/Office/2025-10" target="_blank">GET /api/expenses/Office/2025-10</a></li>
+            <li><a href="${base}/api/expenses/total/Office/2025-10" target="_blank">GET /api/expenses/total/Office/2025-10</a></li>
+            <li><a href="${base}/api/expenses/2025-10" target="_blank">GET /api/expenses/2025-10</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Customer Expenses</div>
+        <div class="card">
+          <ul>
+            <li><a href="${base}/api/customer-expenses" target="_blank">GET /api/customer-expenses</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Employees</div>
+        <div class="card">
+          <ul>
+            <li><a href="${base}/api/employees" target="_blank">GET /api/employees</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="section">
+        <div class="section-title">Utilities</div>
+        <div class="card">
+          <ul>
+            <li><a href="${base}/" target="_blank">GET /</a> <span class="muted">(health)</span></li>
+            <li><a href="${base}/api/test" target="_blank">GET /api/test</a></li>
+            <li>POST /api/seed <span class="muted">(use in <a href="${base}/api/docs" target="_blank">API Docs</a>)</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="muted">Tip: Use the “Open API Docs” button for POST/PUT/DELETE tryouts.</p>
+    </div>
+  </body>
+</html>`;
+
+app.get('/api', (req, res) => {
+  const base = `${req.protocol}://${req.get('host')}`;
+  res.type('html').send(buildApiIndexHtml(base));
+});
+
 // Seed sample data for quick testing in frontend and docs
 app.post('/api/seed', async (req, res) => {
   try {
@@ -515,6 +619,13 @@ mongoose.connect(MONGODB_URI, {
   console.log('MongoDB connected successfully');
   app.listen(PORT, () => {
     console.log(`Backend server running on port ${PORT}`);
+    const base = `http://localhost:${PORT}`;
+    console.log(`API Index: ${base}/api`);
+    console.log(`API Docs:  ${base}/api/docs`);
+    if (process.env.NODE_ENV !== 'production' && !process.env.NO_OPEN) {
+      // Best-effort open the API Index in default browser; swallow async rejections (Windows EPERM, etc.)
+      try { open(`${base}/api`).catch(() => {}); } catch (e) { /* ignore */ }
+    }
   });
 }).catch((err) => {
   console.error('MongoDB connection error:', err.message);
