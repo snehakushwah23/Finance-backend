@@ -1,10 +1,139 @@
 import express from 'express';
 import cors from 'cors';
 import mongoose from 'mongoose';
+import swaggerUi from 'swagger-ui-express';
+import swaggerJsdoc from 'swagger-jsdoc';
 
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Swagger setup
+const swaggerSpec = swaggerJsdoc({
+  definition: {
+    openapi: '3.0.0',
+    info: {
+      title: 'Finance Backend API',
+      version: '1.0.0',
+      description: 'Interactive API documentation for branches, entries, expenses, and employees.'
+    },
+    servers: [
+      { url: '/'}
+    ],
+    components: {
+      schemas: {
+        Branch: {
+          type: 'object',
+          properties: { _id: { type: 'string' }, name: { type: 'string' } }
+        },
+        BranchEntry: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            branch: { type: 'string' },
+            date: { type: 'string', format: 'date-time' },
+            customer: { type: 'string' },
+            place: { type: 'string' },
+            mobile: { type: 'string' },
+            loan: { type: 'number' },
+            interest: { type: 'number' },
+            emi: { type: 'number' }
+          }
+        },
+        Expense: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            category: { type: 'string' },
+            month: { type: 'string' },
+            amount: { type: 'number' },
+            description: { type: 'string' },
+            date: { type: 'string', format: 'date-time' }
+          }
+        },
+        CustomerExpense: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            customerName: { type: 'string' },
+            date: { type: 'string', format: 'date-time' },
+            amount: { type: 'number' },
+            category: { type: 'string' },
+            description: { type: 'string' }
+          }
+        },
+        Employee: {
+          type: 'object',
+          properties: {
+            _id: { type: 'string' },
+            name: { type: 'string' },
+            mobile: { type: 'string' },
+            designation: { type: 'string' },
+            department: { type: 'string' },
+            joiningDate: { type: 'string', format: 'date-time' },
+            salary: { type: 'number' },
+            createdAt: { type: 'string', format: 'date-time' }
+          }
+        }
+      }
+    },
+    paths: {
+      '/api/branch-entries': {
+        get: { summary: 'Get all branch entries', responses: { 200: { description: 'OK', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/BranchEntry' } } } } } } },
+        post: { summary: 'Create branch entry', responses: { 201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/BranchEntry' } } } } } }
+      },
+      '/api/branch-entries/{branch}': {
+        get: { summary: 'Get entries by branch', parameters: [{ name: 'branch', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/BranchEntry' } } } } } } }
+      },
+      '/api/branch-entries/{id}': {
+        put: { summary: 'Update entry', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+        delete: { summary: 'Delete entry', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/branches': {
+        get: { summary: 'Get all branches', responses: { 200: { description: 'OK', content: { 'application/json': { schema: { type: 'array', items: { $ref: '#/components/schemas/Branch' } } } } } } },
+        post: { summary: 'Create branch', responses: { 201: { description: 'Created', content: { 'application/json': { schema: { $ref: '#/components/schemas/Branch' } } } } } }
+      },
+      '/api/branches/{id}': {
+        put: { summary: 'Update branch', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+        delete: { summary: 'Delete branch', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/expenses/{category}/{month}': {
+        get: { summary: 'Get expenses by category and month', parameters: [{ name: 'category', in: 'path', required: true, schema: { type: 'string' } }, { name: 'month', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/expenses': {
+        post: { summary: 'Create expense', responses: { 201: { description: 'Created' } } }
+      },
+      '/api/expenses/total/{category}/{month}': {
+        get: { summary: 'Get expense totals by day', parameters: [{ name: 'category', in: 'path', required: true, schema: { type: 'string' } }, { name: 'month', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/expenses/{month}': {
+        get: { summary: 'Get expenses by month', parameters: [{ name: 'month', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/expenses/all/{month}': {
+        get: { summary: 'Get all expenses of a month', parameters: [{ name: 'month', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/customer-expenses': {
+        get: { summary: 'Get all customer expenses', responses: { 200: { description: 'OK' } } },
+        post: { summary: 'Create customer expense', responses: { 201: { description: 'Created' } } }
+      },
+      '/api/customer-expenses/{id}': {
+        put: { summary: 'Update customer expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+        delete: { summary: 'Delete customer expense', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      },
+      '/api/employees': {
+        get: { summary: 'Get all employees', responses: { 200: { description: 'OK' } } },
+        post: { summary: 'Create employee', responses: { 201: { description: 'Created' } } }
+      },
+      '/api/employees/{id}': {
+        put: { summary: 'Update employee', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } },
+        delete: { summary: 'Delete employee', parameters: [{ name: 'id', in: 'path', required: true, schema: { type: 'string' } }], responses: { 200: { description: 'OK' } } }
+      }
+    }
+  },
+  apis: []
+});
+
+app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 // Branch schema and model
 const branchSchema = new mongoose.Schema({
@@ -145,6 +274,35 @@ app.get('/api/test', (req, res) => {
   res.json({ status: 'Database connected' });
 });
 
+// Seed sample data for quick testing in frontend and docs
+app.post('/api/seed', async (req, res) => {
+  try {
+    const branchesCount = await Branch.countDocuments();
+    if (branchesCount === 0) {
+      await Branch.insertMany([
+        { name: 'mumbai' },
+        { name: 'delhi' }
+      ]);
+    }
+
+    const entriesCount = await BranchEntry.countDocuments();
+    if (entriesCount === 0) {
+      const today = new Date();
+      const days = (d) => new Date(today.getTime() - d * 86400000);
+      await BranchEntry.insertMany([
+        { branch: 'mumbai', date: days(1), customer: 'Rohit Sharma', place: 'Andheri', mobile: '9000000001', loan: 30000, interest: 43, emi: 43 },
+        { branch: 'mumbai', date: days(0), customer: 'Rohit Sharma', place: 'Payment', mobile: '9000000001', loan: 5000, interest: 0, emi: 0 },
+        { branch: 'delhi', date: days(7), customer: 'Anita Verma', place: 'Dwarka', mobile: '9000000002', loan: 6554, interest: 25, emi: 23 },
+        { branch: 'delhi', date: days(2), customer: 'Anita Verma', place: 'Payment', mobile: '9000000002', loan: 1000, interest: 0, emi: 0 }
+      ]);
+    }
+
+    res.json({ success: true });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
+});
+
 const expenseSchema = new mongoose.Schema({
   category: { type: String, required: true },
   month: { type: String, required: true },
@@ -206,6 +364,7 @@ app.get('/api/expenses/:month', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+  
 });
 
 // GET /api/expenses/all/:month - all expenses for a month (for daily totals by category)
