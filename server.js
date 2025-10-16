@@ -802,6 +802,57 @@ app.delete('/api/branch-employees/:id', async (req, res) => {
   }
 });
 
+// ---------------------------------------------
+// Branch Category Settings (added/deleted categories per branch)
+// ---------------------------------------------
+
+const branchCategorySettingsSchema = new mongoose.Schema({
+  branch: { type: String, required: true, unique: true },
+  addedCategories: { type: [String], default: [] },
+  deletedCategories: { type: [String], default: [] },
+  updatedAt: { type: Date, default: Date.now }
+});
+
+const BranchCategorySettings = mongoose.model('BranchCategorySettings', branchCategorySettingsSchema);
+
+// GET /api/branch-category-settings/:branch - get category settings for a branch
+app.get('/api/branch-category-settings/:branch', async (req, res) => {
+  try {
+    const settings = await BranchCategorySettings.findOne({ branch: req.params.branch.toLowerCase() });
+    if (!settings) {
+      // Return empty settings if none exist
+      return res.json({ branch: req.params.branch.toLowerCase(), addedCategories: [], deletedCategories: [] });
+    }
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// POST /api/branch-category-settings/:branch - save/update category settings for a branch
+app.post('/api/branch-category-settings/:branch', async (req, res) => {
+  try {
+    const branchName = req.params.branch.toLowerCase();
+    const { addedCategories, deletedCategories } = req.body;
+    
+    const settings = await BranchCategorySettings.findOneAndUpdate(
+      { branch: branchName },
+      { 
+        $set: { 
+          addedCategories: addedCategories || [],
+          deletedCategories: deletedCategories || [],
+          updatedAt: new Date()
+        }
+      },
+      { new: true, upsert: true }
+    );
+    
+    res.json(settings);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 // Catch-all for undefined API routes (should be last)
 // (Moved to very end, after all other routes)
 
